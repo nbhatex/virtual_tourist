@@ -8,13 +8,21 @@
 
 import UIKit
 import MapKit
+import CoreData
 
-class ViewController: UIViewController, MKMapViewDelegate {
+class ViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        do {
+            try fetchedResultController.performFetch()
+        } catch {
+            print("Error while getting the pins")
+            abort()
+        }
         
     }
 
@@ -54,7 +62,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
         
         mapView.delegate = self
         
-        let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: "onTapOfMap:")
+        let tapGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "onTapOfMap:")
         self.mapView.addGestureRecognizer(tapGestureRecognizer)
     }
     
@@ -64,8 +72,29 @@ class ViewController: UIViewController, MKMapViewDelegate {
         let annotation = MKPointAnnotation()
         annotation.coordinate = touchMapCoordinate
         mapView.addAnnotation(annotation)
+        
+        let _ = Pin(latitude: touchMapCoordinate.latitude, longitude: touchMapCoordinate.longitude, context: sharedContext)
+        
+        CoreDataStackManager.sharedInstance().saveContext()
+        
     }
     
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(animated)
+        var annotations = [MKAnnotation]()
+        for fetchedObject in fetchedResultController.fetchedObjects! {
+            let pin = fetchedObject as! Pin
+            
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = pin.coordinate
+            annotations.append(annotation)
+        }
+        
+        for annotation in self.mapView.annotations {
+            self.mapView.removeAnnotation(annotation)
+        }
+        self.mapView.addAnnotations(annotations)
+    }
     
 
     override func viewWillDisappear(animated: Bool) {
@@ -93,5 +122,21 @@ class ViewController: UIViewController, MKMapViewDelegate {
         saveMapCurrentRegion()
     }
     
+    var sharedContext: NSManagedObjectContext {
+        return CoreDataStackManager.sharedInstance().managedObjectContext
+    }
+    
+    lazy var fetchedResultController : NSFetchedResultsController = {
+        let fetchRequest = NSFetchRequest(entityName: "Pin")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "latitude", ascending: true)]
+        
+        let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
+        return fetchedResultController
+        
+    }()
+    
+    func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
+        print("Did select")
+    }
 }
 
