@@ -10,7 +10,7 @@ import UIKit
 import MapKit
 import CoreData
 
-class ViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
+class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
     override func viewDidLoad() {
@@ -69,11 +69,11 @@ class ViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsContr
     func onTapOfMap(gestureRecoginizer:UIGestureRecognizer){
         let touchPoint = gestureRecoginizer.locationInView(mapView)
         let touchMapCoordinate = mapView.convertPoint(touchPoint, toCoordinateFromView: mapView)
-        let annotation = MKPointAnnotation()
-        annotation.coordinate = touchMapCoordinate
-        mapView.addAnnotation(annotation)
         
-        let _ = Pin(latitude: touchMapCoordinate.latitude, longitude: touchMapCoordinate.longitude, context: sharedContext)
+        
+        let pin = Pin(latitude: touchMapCoordinate.latitude, longitude: touchMapCoordinate.longitude, context: sharedContext)
+        let annotation = MKPinAnnotation(pin: pin)
+        mapView.addAnnotation(annotation)
         
         CoreDataStackManager.sharedInstance().saveContext()
         
@@ -85,9 +85,10 @@ class ViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsContr
         for fetchedObject in fetchedResultController.fetchedObjects! {
             let pin = fetchedObject as! Pin
             
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = pin.coordinate
+            let annotation = MKPinAnnotation(pin:pin)
+            //annotation.coordinate = pin.coordinate
             annotations.append(annotation)
+            
         }
         
         for annotation in self.mapView.annotations {
@@ -128,7 +129,7 @@ class ViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsContr
     
     lazy var fetchedResultController : NSFetchedResultsController = {
         let fetchRequest = NSFetchRequest(entityName: "Pin")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "latitude", ascending: true)]
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "id", ascending: true)]
         
         let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
         return fetchedResultController
@@ -136,7 +137,10 @@ class ViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsContr
     }()
     
     func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
-        print("Did select")
+        let controller = storyboard?.instantiateViewControllerWithIdentifier("PhotoAlbum") as! PhotoAlbumViewController
+        let pinAnnotation = view.annotation as? MKPinAnnotation
+        controller.pin = pinAnnotation?.pin
+        self.navigationController?.pushViewController(controller, animated: true)
     }
 }
 

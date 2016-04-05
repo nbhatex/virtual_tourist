@@ -25,8 +25,8 @@ class Pin: NSManagedObject {
         self.longitude = longitude
     }
 
+
     var coordinate: CLLocationCoordinate2D {
         return CLLocationCoordinate2D(latitude: Double(latitude!), longitude: Double(longitude!))
     }
-    
 }
