@@ -6,7 +6,7 @@
 //  Copyright © 2016 Narasimha Bhat. All rights reserved.
 //
 
-import Foundation
+import UIKit
 import CoreData
 
 
@@ -20,8 +20,29 @@ class Photo: NSManagedObject {
     init(dictionary:[String:AnyObject], context:NSManagedObjectContext){
         let entity = NSEntityDescription.entityForName("Photo", inManagedObjectContext: context)
         super.init(entity: entity!,insertIntoManagedObjectContext:context)
-        imageURL = dictionary["url_m"]! as? String
+        if let tempImageURL = dictionary["url_m"] {
+            imageURL = tempImageURL as? String
+        }
+        id = NSUUID().UUIDString
     }
 
+    
+    var image:UIImage? {
+        get {
+            return cache.getImage(id)
+        }
+        
+        set {
+            cache.storeImage(id,image: newValue!)
+        }
+    }
+    
+    func clearImageStore() {
+        cache.removeImageFromStore(id)
+    }
+    
+    var cache:ImageCache {
+        return ImageCache.sharedInstance()
+    }
 
 }

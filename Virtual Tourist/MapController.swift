@@ -11,18 +11,15 @@ import MapKit
 import CoreData
 
 class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
+    
+    var currentAnnotation:MKPinAnnotation!
 
     @IBOutlet weak var mapView: MKMapView!
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        do {
-            try fetchedResultController.performFetch()
-        } catch {
-            print("Error while getting the pins")
-            abort()
-        }
+        
         
     }
 
@@ -32,6 +29,92 @@ class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsContro
     }
     
     override func viewWillAppear(animated: Bool) {
+        
+        mapView.region = createRegionFromSavedData()
+        
+        // TODO
+        // Setting the delegate after the values are read 
+        // Otherwise values can be overriden by the first call to mapView
+        // Need to check if there is a better way
+        // Zoomlevel is not right 
+        
+        mapView.delegate = self
+        
+        let tapGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(MapController.onTapOfMap(_:)))
+        self.mapView.addGestureRecognizer(tapGestureRecognizer)
+    }
+    
+    func onTapOfMap(gestureRecoginizer:UIGestureRecognizer){
+        
+        let touchPoint = gestureRecoginizer.locationInView(mapView)
+        let touchMapCoordinate = mapView.convertPoint(touchPoint, toCoordinateFromView: mapView)
+
+        
+        if(gestureRecoginizer.state == UIGestureRecognizerState.Began ) {
+            let pin = Pin(latitude: touchMapCoordinate.latitude, longitude: touchMapCoordinate.longitude, context: sharedContext)
+            let annotation = MKPinAnnotation(pin: pin)
+            mapView.addAnnotation(annotation)
+            currentAnnotation = annotation
+        }
+        
+        if(gestureRecoginizer.state == UIGestureRecognizerState.Changed ) {
+            currentAnnotation.coordinate = CLLocationCoordinate2D(latitude: touchMapCoordinate.latitude, longitude: touchMapCoordinate.longitude)
+        }
+        
+        if(gestureRecoginizer.state == UIGestureRecognizerState.Ended) {
+            currentAnnotation.pin.latitude = touchMapCoordinate.latitude
+            currentAnnotation.pin.longitude = touchMapCoordinate.longitude
+            CoreDataStackManager.sharedInstance().saveContext()
+            currentAnnotation = nil
+        }
+    }
+    
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        do {
+            try fetchedResultController.performFetch()
+        } catch {
+            print("Error while getting the pins")
+            abort()
+        }
+        
+        var annotations = [MKAnnotation]()
+        for fetchedObject in fetchedResultController.fetchedObjects! {
+            let pin = fetchedObject as! Pin
+            let annotation = MKPinAnnotation(pin:pin)
+            annotations.append(annotation)
+            
+        }
+        
+        for annotation in self.mapView.annotations {
+            self.mapView.removeAnnotation(annotation)
+        }
+        self.mapView.addAnnotations(annotations)
+    }
+    
+
+    override func viewWillDisappear(animated: Bool) {
+        super.viewWillDisappear(animated)
+    }
+    
+    func saveMapCurrentRegion() {
+        let center = mapView.region.center
+        let latitude = center.latitude
+        let longitude = center.longitude
+        
+        let span = mapView.region.span
+        let latitudeDelta = span.latitudeDelta
+        let longitudeDelta = span.longitudeDelta
+        
+        let userDefaults = NSUserDefaults.standardUserDefaults()
+        userDefaults.setDouble(latitude, forKey: "mapRegionCenterLatitude")
+        userDefaults.setDouble(longitude, forKey: "mapRegionCenterLongitude")
+        userDefaults.setDouble(latitudeDelta, forKey: "mapRegionCenterLatitudeDelta")
+        userDefaults.setDouble(longitudeDelta, forKey: "mapRegionCenterLongitudeDelta")
+    }
+    
+    func createRegionFromSavedData() -> MKCoordinateRegion {
         let userDefaults = NSUserDefaults.standardUserDefaults()
         var latitude = 0.0, longitude = 0.0, latitudeDelta = 100.0, longitudeDelta = 100.0
         if let value = userDefaults.valueForKey("mapRegionCenterLatitude") {
@@ -53,74 +136,13 @@ class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsContro
         let center = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         let span = MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
         
-        mapView.region = MKCoordinateRegion(center: center, span: span)
-        // TODO
-        // Setting the delegate after the values are read 
-        // Otherwise values can be overriden by the first call to mapView
-        // Need to check if there is a better way
-        // Zoomlevel is not right 
-        
-        mapView.delegate = self
-        
-        let tapGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "onTapOfMap:")
-        self.mapView.addGestureRecognizer(tapGestureRecognizer)
-    }
-    
-    func onTapOfMap(gestureRecoginizer:UIGestureRecognizer){
-        let touchPoint = gestureRecoginizer.locationInView(mapView)
-        let touchMapCoordinate = mapView.convertPoint(touchPoint, toCoordinateFromView: mapView)
-        
-        
-        let pin = Pin(latitude: touchMapCoordinate.latitude, longitude: touchMapCoordinate.longitude, context: sharedContext)
-        let annotation = MKPinAnnotation(pin: pin)
-        mapView.addAnnotation(annotation)
-        
-        CoreDataStackManager.sharedInstance().saveContext()
-        
-    }
-    
-    override func viewDidAppear(animated: Bool) {
-        super.viewDidAppear(animated)
-        var annotations = [MKAnnotation]()
-        for fetchedObject in fetchedResultController.fetchedObjects! {
-            let pin = fetchedObject as! Pin
-            
-            let annotation = MKPinAnnotation(pin:pin)
-            //annotation.coordinate = pin.coordinate
-            annotations.append(annotation)
-            
-        }
-        
-        for annotation in self.mapView.annotations {
-            self.mapView.removeAnnotation(annotation)
-        }
-        self.mapView.addAnnotations(annotations)
-    }
-    
-
-    override func viewWillDisappear(animated: Bool) {
-        super.viewWillDisappear(animated)
-        saveMapCurrentRegion()
-    }
-    
-    func saveMapCurrentRegion() {
-        let center = mapView.region.center
-        let latitude = center.latitude
-        let longitude = center.longitude
-        
-        let span = mapView.region.span
-        let latitudeDelta = span.latitudeDelta
-        let longitudeDelta = span.longitudeDelta
-        
-        let userDefaults = NSUserDefaults.standardUserDefaults()
-        userDefaults.setDouble(latitude, forKey: "mapRegionCenterLatitude")
-        userDefaults.setDouble(longitude, forKey: "mapRegionCenterLongitude")
-        userDefaults.setDouble(latitudeDelta, forKey: "mapRegionCenterLatitudeDelta")
-        userDefaults.setDouble(longitudeDelta, forKey: "mapRegionCenterLongitudeDelta")
+        return MKCoordinateRegion(center: center, span: span)
     }
     
     func mapView(mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        saveMapCurrentRegion()
+        if(mapViewRegionDidChangeFromUserInteraction()) {
+            saveMapCurrentRegion()
+        }
     }
     
     var sharedContext: NSManagedObjectContext {
@@ -132,6 +154,7 @@ class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsContro
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "id", ascending: true)]
         
         let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
+        
         return fetchedResultController
         
     }()
@@ -142,5 +165,19 @@ class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsContro
         controller.pin = pinAnnotation?.pin
         self.navigationController?.pushViewController(controller, animated: true)
     }
+    
+    func mapViewRegionDidChangeFromUserInteraction() -> Bool {
+        let view = self.mapView.subviews[0]
+        //  Look through gesture recognizers to determine whether this region change is from user interaction
+        if let gestureRecognizers = view.gestureRecognizers {
+            for recognizer in gestureRecognizers {
+                if (recognizer.state == UIGestureRecognizerState.Began || recognizer.state == UIGestureRecognizerState.Ended) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
 }
 

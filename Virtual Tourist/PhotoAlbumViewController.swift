@@ -11,37 +11,89 @@ import MapKit
 import CoreData
 
 
-class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, NSFetchedResultsControllerDelegate {
+class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, NSFetchedResultsControllerDelegate {
     
     var pin:Pin!
     
+    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     @IBOutlet weak var photoCollection: UICollectionView!
     
+    @IBOutlet weak var mapView: MKMapView!
+    
+    @IBOutlet weak var message: UILabel!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
+    var photosToBeDeleted = [NSIndexPath]()
+    var photosToBeInserted = [NSIndexPath]()
+    
     override func viewDidLoad() {
+        refreshController()
+        photoCollection.dataSource = self
+        photoCollection.delegate = self
+        fetchedResultController.delegate = self
+
+    }
+    override func viewWillAppear(animated: Bool) {
+        let space: CGFloat = 3.0
+        let size = view.frame.size
+        let dimension:CGFloat = size.width >= size.height ? (size.width - (5 * space)) / 6.0 :  (size.width - (2 * space)) / 3.0
+        flowLayout.minimumInteritemSpacing = space
+        flowLayout.minimumLineSpacing = space
+        flowLayout.itemSize = CGSizeMake(dimension,dimension)
+        if pin.photos.count < 1 {
+            downloadPhotos()
+            
+        }
+        let annotation = MKPinAnnotation(pin: pin)
+        mapView.addAnnotation(annotation)
+        mapView.region = MKCoordinateRegion(center: pin.coordinate, span: MKCoordinateSpan(latitudeDelta: 5,longitudeDelta: 5))
         
+        message.hidden = true
+    }
+    
+    @IBAction func createNewCollection(sender: AnyObject) {
+        for photo in pin.photos {
+            (photo as! Photo).clearImageStore()
+            sharedContext.deleteObject(photo as! NSManagedObject)
+        }
+        saveContext()
+        downloadPhotos()
+        
+    }
+    
+    func refreshController() {
         do {
             try fetchedResultController.performFetch()
-            if fetchedResultController.fetchedObjects?.count < 1 {
-                flickrManager.search(pin,completionHandler:{photosFromResult in
-                    
-                    for photoFromResult in photosFromResult {
-                        let photo = Photo(dictionary: photoFromResult, context: self.sharedContext)
-                        photo.pin = self.pin
-                    }
-                    self.saveContext()
-                    },failureHandler: {errorMessage in
-                        
-                    })
-            }
+            
         } catch {
             print("Error while getting the pins")
             abort()
         }
-        
-        
-        photoCollection.dataSource = self
-       
+    }
 
+    func downloadPhotos(){
+        activityIndicator.startAnimating()
+        flickrManager.search(pin,completionHandler:{photosFromResult in
+            
+            // Non repetitive error occured related to
+            //_referenceData64 only defined for abstract class
+            // Moved saveContext inside main thread to solve the issue.
+            dispatch_async(dispatch_get_main_queue(), {
+                for photoFromResult in photosFromResult {
+                    let photo = Photo(dictionary: photoFromResult, context: self.sharedContext)
+                    photo.pin = self.pin
+                }
+                self.saveContext()
+                self.activityIndicator.stopAnimating()
+            })
+            
+            },failureHandler: {errorMessage in
+                dispatch_async(dispatch_get_main_queue(), {
+                    self.activityIndicator.stopAnimating()
+                    self.message.hidden = false
+                    self.message.text = errorMessage
+                    
+                })
+        })
     }
     
     func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -52,17 +104,43 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, NSF
     
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
         let photo = fetchedResultController.objectAtIndexPath(indexPath) as! Photo
-        print(photo.imageURL)
+        print(photo.id)
         let cell = collectionView.dequeueReusableCellWithReuseIdentifier("PhotoCell", forIndexPath: indexPath)
         cell.backgroundColor = UIColor(colorLiteralRed: 0, green: 0, blue: 0, alpha: 0)
         cell.backgroundView = UIImageView(image: UIImage(named: "placeHolder"))
-        flickrManager.getImage(photo.imageURL!,completionHandler:{data in
-            
-            cell.backgroundView = UIImageView(image: UIImage(data: data))
-            },failureHandler: {errorMessage in
+        if photo.image == nil {
+            if let imgURL = photo.imageURL {
+            flickrManager.getImage(imgURL,completionHandler:{data in
+                photo.image = UIImage(data: data)
+                dispatch_async(dispatch_get_main_queue(), {
+                    cell.backgroundView = UIImageView(image:photo.image )
+                })
                 
+                },failureHandler: {errorMessage in
+                    dispatch_async(dispatch_get_main_queue(), {
+                        self.message.hidden = false
+                        self.message.text = errorMessage
+
+                    })
             })
+            }
+        } else {
+            cell.backgroundView = UIImageView(image: photo.image)
+        }
+        
         return cell
+    }
+    
+    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        // handle tap events
+        
+        let photo = self.fetchedResultController.objectAtIndexPath(indexPath) as! Photo
+        photo.clearImageStore()
+        self.sharedContext.deleteObject(photo)
+        self.saveContext()
+
+       
+        
     }
     
     var sharedContext: NSManagedObjectContext {
@@ -71,7 +149,7 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, NSF
     
     lazy var fetchedResultController : NSFetchedResultsController = {
         let fetchRequest = NSFetchRequest(entityName: "Photo")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "id", ascending: true)]
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageURL", ascending: true)]
         fetchRequest.predicate = NSPredicate(format: "pin = %@", self.pin)
         
         let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
@@ -79,11 +157,41 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, NSF
         
     }()
     
+    
     func saveContext() {
         CoreDataStackManager.sharedInstance().saveContext()
     }
     
     var flickrManager: FlickrManager {
         return FlickrManager.sharedInstance()
+    }
+    
+    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+        print("Controller will change content")
+        photosToBeDeleted = [NSIndexPath]()
+        photosToBeInserted = [NSIndexPath]()
+    }
+    
+    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+        print("Controller did change object")
+        switch(type) {
+        case .Insert : photosToBeInserted.append(newIndexPath!)
+           case .Delete : photosToBeDeleted.append(indexPath!)
+           
+           default : print("do nothing")
+        }
+    }
+    
+    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+        print("Controller did change content")
+        
+        photoCollection.performBatchUpdates({
+            if !self.photosToBeDeleted.isEmpty {
+                self.photoCollection.deleteItemsAtIndexPaths(self.photosToBeDeleted)
+            }
+            if !self.photosToBeInserted.isEmpty {
+                self.photoCollection.insertItemsAtIndexPaths(self.photosToBeInserted)
+            }
+        }, completion: nil)
     }
 }

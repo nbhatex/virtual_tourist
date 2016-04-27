@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9532" systemVersion="15E65" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="3e9-sq-s8M">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10116" systemVersion="15E65" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="3e9-sq-s8M">
     <dependencies>
-        <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9530"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
     </dependencies>
     <scenes>
@@ -18,8 +17,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="itD-gp-2uG">
-                                <rect key="frame" x="0.0" y="28" width="600" height="572"/>
+                            <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="itD-gp-2uG">
+                                <rect key="frame" x="0.0" y="72" width="600" height="528"/>
                             </mapView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
@@ -78,20 +77,52 @@
                                     <outlet property="dataSource" destination="3pE-Md-LRK" id="JLH-k0-deI"/>
                                 </connections>
                             </collectionView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Mew-Ne-iHh">
+                                <rect key="frame" x="259" y="290" width="83" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="5LU-Hc-yxd">
+                                <rect key="frame" x="290" y="290" width="20" height="20"/>
+                            </activityIndicatorView>
+                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UAs-S4-4tS">
+                                <rect key="frame" x="0.0" y="556" width="600" height="44"/>
+                                <items>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="KfR-8i-wmQ"/>
+                                    <barButtonItem title="New Collection" id="7Jy-MM-aE8">
+                                        <connections>
+                                            <action selector="createNewCollection:" destination="3pE-Md-LRK" id="6Z3-SJ-xij"/>
+                                        </connections>
+                                    </barButtonItem>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="a9Z-pB-y7S"/>
+                                </items>
+                            </toolbar>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="5LU-Hc-yxd" firstAttribute="centerX" secondItem="K7x-LS-F9e" secondAttribute="centerX" id="4ee-vc-216"/>
                             <constraint firstItem="VYy-dS-Chi" firstAttribute="top" secondItem="U0X-Fr-rde" secondAttribute="bottom" constant="2" id="7E8-aE-SS5"/>
                             <constraint firstAttribute="trailing" secondItem="U0X-Fr-rde" secondAttribute="trailing" id="9HJ-14-nUv"/>
+                            <constraint firstItem="UAs-S4-4tS" firstAttribute="bottom" secondItem="4Z0-QS-cOo" secondAttribute="top" id="LHa-9C-Efg"/>
                             <constraint firstItem="4Z0-QS-cOo" firstAttribute="top" secondItem="U0X-Fr-rde" secondAttribute="bottom" constant="465" id="LPD-sz-Zlv"/>
+                            <constraint firstItem="UAs-S4-4tS" firstAttribute="trailing" secondItem="VYy-dS-Chi" secondAttribute="trailing" id="Nsg-mV-rM9"/>
+                            <constraint firstItem="5LU-Hc-yxd" firstAttribute="centerY" secondItem="K7x-LS-F9e" secondAttribute="centerY" id="Pnk-kL-d9a"/>
                             <constraint firstItem="VYy-dS-Chi" firstAttribute="bottom" secondItem="4Z0-QS-cOo" secondAttribute="top" id="VlW-jA-dH4"/>
+                            <constraint firstItem="UAs-S4-4tS" firstAttribute="leading" secondItem="VYy-dS-Chi" secondAttribute="leading" id="c5g-IU-fZy"/>
                             <constraint firstItem="VYy-dS-Chi" firstAttribute="leading" secondItem="U0X-Fr-rde" secondAttribute="leading" id="cJS-DL-Ja6"/>
                             <constraint firstItem="U0X-Fr-rde" firstAttribute="top" secondItem="K7x-LS-F9e" secondAttribute="top" id="fbb-Ob-8Nr"/>
                             <constraint firstItem="U0X-Fr-rde" firstAttribute="leading" secondItem="K7x-LS-F9e" secondAttribute="leading" id="h5y-Qg-2Lg"/>
+                            <constraint firstItem="Mew-Ne-iHh" firstAttribute="centerX" secondItem="K7x-LS-F9e" secondAttribute="centerX" id="lwy-9X-gcp"/>
+                            <constraint firstItem="Mew-Ne-iHh" firstAttribute="centerY" secondItem="K7x-LS-F9e" secondAttribute="centerY" id="zgR-hB-qqx"/>
                             <constraint firstItem="VYy-dS-Chi" firstAttribute="trailing" secondItem="U0X-Fr-rde" secondAttribute="trailing" id="zr3-e9-tPC"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="5LU-Hc-yxd" id="ZHk-o4-SNk"/>
+                        <outlet property="flowLayout" destination="xS8-rx-8vQ" id="Yrj-N8-g8C"/>
+                        <outlet property="mapView" destination="U0X-Fr-rde" id="24h-Fq-Xg8"/>
+                        <outlet property="message" destination="Mew-Ne-iHh" id="zHQ-FI-G0b"/>
                         <outlet property="photoCollection" destination="VYy-dS-Chi" id="GM8-R2-Hp1"/>
                     </connections>
                 </viewController>

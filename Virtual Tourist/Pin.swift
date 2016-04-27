@@ -21,6 +21,7 @@ class Pin: NSManagedObject {
     init(latitude:Double,longitude:Double, context:NSManagedObjectContext){
         let entity = NSEntityDescription.entityForName("Pin", inManagedObjectContext: context)
         super.init(entity: entity!,insertIntoManagedObjectContext:context)
+        self.id = NSUUID().UUIDString
         self.latitude = latitude
         self.longitude = longitude
     }
@@ -28,5 +29,10 @@ class Pin: NSManagedObject {
 
     var coordinate: CLLocationCoordinate2D {
         return CLLocationCoordinate2D(latitude: Double(latitude!), longitude: Double(longitude!))
+    }
+    
+    func setCoordinate(newCoordinate:CLLocationCoordinate2D){
+        self.latitude = newCoordinate.latitude
+        self.longitude = newCoordinate.longitude
     }
 }

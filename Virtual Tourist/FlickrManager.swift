@@ -16,6 +16,7 @@ let API_METHOD = "flickr.photos.search"
 class FlickrManager {
     
     let session = NSURLSession.sharedSession()
+    //let cache = ImageCache()
     
     class func sharedInstance() -> FlickrManager {
         struct Static {
@@ -67,7 +68,13 @@ class FlickrManager {
                 failureHandler("Error while getting photos \(parsedResult)")
                 return
             }
+            let total = result!["total"] as! String
+            if Int(total) < 1 {
+                print("No images found for this place")
+                failureHandler("No images found for this place")
+            }
             let photosFromResult = result!["photo"] as! [[String:AnyObject]]
+            
             
             
             completionHandler(photosFromResult)

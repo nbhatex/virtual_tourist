@@ -9,19 +9,15 @@
 import Foundation
 import MapKit
 
-class MKPinAnnotation:NSObject, MKAnnotation {
+class MKPinAnnotation: MKPointAnnotation {
     
     var pin:Pin
     
     init(pin:Pin){
+
         self.pin = pin
+        super.init()
+        self.coordinate = pin.coordinate
     }
 
-    @objc var coordinate:CLLocationCoordinate2D{
-        return pin.coordinate
-    }
-    
-    func setCoordinate(newCoordinate:CLLocationCoordinate2D){
-        //pin.setCoordinatenewCoordinate
-    }
 }
