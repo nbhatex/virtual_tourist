@@ -42,7 +42,7 @@ class Photo: NSManagedObject {
     }
     
     var cache:ImageCache {
-        return ImageCache.sharedInstance()
+        return ImageCache.sharedInstance
     }
 
 }

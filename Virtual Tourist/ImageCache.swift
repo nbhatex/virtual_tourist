@@ -11,13 +11,8 @@ import UIKit
 class ImageCache {
     var cache = NSCache()
     
-    class func sharedInstance() -> ImageCache {
-        struct Static {
-            static let instance = ImageCache()
-        }
-        
-        return Static.instance
-    }
+    static let sharedInstance = ImageCache()
+    private init(){}
     
     func getImage(identifier:String)->UIImage? {
         let path = pathForIdentifier(identifier)

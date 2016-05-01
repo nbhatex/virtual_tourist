@@ -16,15 +16,9 @@ let API_METHOD = "flickr.photos.search"
 class FlickrManager {
     
     let session = NSURLSession.sharedSession()
-    //let cache = ImageCache()
     
-    class func sharedInstance() -> FlickrManager {
-        struct Static {
-            static let instance = FlickrManager()
-        }
-        
-        return Static.instance
-    }
+    static let sharedInstance = FlickrManager()
+    private init() {}
     
     func search(pin:Pin,completionHandler:([[String:AnyObject]])->(),failureHandler:(String)->()) {
         

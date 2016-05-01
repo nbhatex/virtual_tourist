@@ -15,18 +15,7 @@ class MapController: UIViewController, MKMapViewDelegate, NSFetchedResultsContro
     var currentAnnotation:MKPinAnnotation!
 
     @IBOutlet weak var mapView: MKMapView!
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-        
-        
-        
-    }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
     
     override func viewWillAppear(animated: Bool) {
         

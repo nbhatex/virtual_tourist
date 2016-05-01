@@ -25,6 +25,9 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
     var photosToBeDeleted = [NSIndexPath]()
     var photosToBeInserted = [NSIndexPath]()
     
+    let MAX_PHOTO_IN_LANDSCAPE = CGFloat(6.0)
+    let MAX_PHOTO_IN_PORTRAIT = CGFloat(3.0)
+    
     override func viewDidLoad() {
         refreshController()
         photoCollection.dataSource = self
@@ -35,7 +38,7 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
     override func viewWillAppear(animated: Bool) {
         let space: CGFloat = 3.0
         let size = view.frame.size
-        let dimension:CGFloat = size.width >= size.height ? (size.width - (5 * space)) / 6.0 :  (size.width - (2 * space)) / 3.0
+        let dimension:CGFloat = size.width >= size.height ? getPhotoDimension(size.width,space: space,numPhotos: MAX_PHOTO_IN_LANDSCAPE) :  getPhotoDimension(size.width,space: space,numPhotos: MAX_PHOTO_IN_PORTRAIT)
         flowLayout.minimumInteritemSpacing = space
         flowLayout.minimumLineSpacing = space
         flowLayout.itemSize = CGSizeMake(dimension,dimension)
@@ -48,6 +51,11 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
         mapView.region = MKCoordinateRegion(center: pin.coordinate, span: MKCoordinateSpan(latitudeDelta: 5,longitudeDelta: 5))
         
         message.hidden = true
+    }
+    
+    func getPhotoDimension(totalWidth:CGFloat,space:CGFloat,numPhotos:CGFloat) -> CGFloat {
+    
+        return (totalWidth - ((numPhotos - 1.0) * space))/numPhotos
     }
     
     @IBAction func createNewCollection(sender: AnyObject) {
@@ -95,6 +103,30 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
                 })
         })
     }
+    var sharedContext: NSManagedObjectContext {
+        return CoreDataStackManager.sharedInstance().managedObjectContext
+    }
+    
+    lazy var fetchedResultController : NSFetchedResultsController = {
+        let fetchRequest = NSFetchRequest(entityName: "Photo")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageURL", ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "pin = %@", self.pin)
+        
+        let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
+        return fetchedResultController
+        
+    }()
+    
+    
+    func saveContext() {
+        CoreDataStackManager.sharedInstance().saveContext()
+    }
+    
+    var flickrManager: FlickrManager {
+        return FlickrManager.sharedInstance
+    }
+    
+    // MARK: Collection view delegate methods
     
     func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         let sectionInfo = fetchedResultController.sections![section]
@@ -143,47 +175,25 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
         
     }
     
-    var sharedContext: NSManagedObjectContext {
-        return CoreDataStackManager.sharedInstance().managedObjectContext
-    }
+
     
-    lazy var fetchedResultController : NSFetchedResultsController = {
-        let fetchRequest = NSFetchRequest(entityName: "Photo")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "imageURL", ascending: true)]
-        fetchRequest.predicate = NSPredicate(format: "pin = %@", self.pin)
-        
-        let fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.sharedContext, sectionNameKeyPath: nil, cacheName: nil)
-        return fetchedResultController
-        
-    }()
-    
-    
-    func saveContext() {
-        CoreDataStackManager.sharedInstance().saveContext()
-    }
-    
-    var flickrManager: FlickrManager {
-        return FlickrManager.sharedInstance()
-    }
+    // MARK: NSFetchedController Delegate Methods
     
     func controllerWillChangeContent(controller: NSFetchedResultsController) {
-        print("Controller will change content")
         photosToBeDeleted = [NSIndexPath]()
         photosToBeInserted = [NSIndexPath]()
     }
     
     func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
-        print("Controller did change object")
         switch(type) {
-        case .Insert : photosToBeInserted.append(newIndexPath!)
-           case .Delete : photosToBeDeleted.append(indexPath!)
+            case .Insert : photosToBeInserted.append(newIndexPath!)
+            case .Delete : photosToBeDeleted.append(indexPath!)
            
-           default : print("do nothing")
+            default : print("do nothing")
         }
     }
     
     func controllerDidChangeContent(controller: NSFetchedResultsController) {
-        print("Controller did change content")
         
         photoCollection.performBatchUpdates({
             if !self.photosToBeDeleted.isEmpty {
