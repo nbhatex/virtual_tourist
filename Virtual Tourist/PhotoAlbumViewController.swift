@@ -60,7 +60,6 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
     
     @IBAction func createNewCollection(sender: AnyObject) {
         for photo in pin.photos {
-            (photo as! Photo).clearImageStore()
             sharedContext.deleteObject(photo as! NSManagedObject)
         }
         saveContext()
@@ -167,12 +166,9 @@ class PhotoAlbumViewController:UIViewController, UICollectionViewDataSource, UIC
         // handle tap events
         
         let photo = self.fetchedResultController.objectAtIndexPath(indexPath) as! Photo
-        photo.clearImageStore()
         self.sharedContext.deleteObject(photo)
         self.saveContext()
-
        
-        
     }
     
 

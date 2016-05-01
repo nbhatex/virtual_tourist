@@ -37,12 +37,13 @@ class Photo: NSManagedObject {
         }
     }
     
-    func clearImageStore() {
-        cache.removeImageFromStore(id)
-    }
-    
     var cache:ImageCache {
         return ImageCache.sharedInstance
+    }
+    
+    override func prepareForDeletion() {
+        super.prepareForDeletion()
+        cache.removeImageFromStore(id)
     }
 
 }
